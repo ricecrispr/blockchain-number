@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberpunk Contract Interaction</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.3.umd.min.js" type="application/javascript"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: black;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            z-index: 1;
+            text-align: center;
+            background-color: rgba(20, 20, 20, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), 0 0 50px rgba(0, 255, 255, 0.2);
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #00ffcc;
+            text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc, 0 0 40px #00ffcc;
+            animation: neon-glow 2s infinite alternate;
+        }
+
+        input, button {
+            margin: 15px;
+            padding: 15px;
+            width: 250px;
+            background-color: #1c1c1c;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            color: #00ffcc;
+            font-size: 1.1em;
+            text-shadow: 0 0 10px #00ffcc;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        button {
+            cursor: pointer;
+            background-color: #1a1a1a;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4), 0 0 30px rgba(0, 255, 255, 0.2);
+        }
+
+        button:hover {
+            background-color: #00ffcc;
+            color: #1a1a1a;
+            box-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 1.3em;
+            text-shadow: 0 0 10px #00ffcc;
+        }
+
+        @keyframes neon-glow {
+            0% { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc, 0 0 40px #00ffcc; }
+            50% { text-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc, 0 0 80px #00ffcc; }
+            100% { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc, 0 0 40px #00ffcc; }
+        }
+
+        button:focus {
+            outline: none;
+            box-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc;
+        }
+
+        /* Anime GIF Background */
+        .gif-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .anime-gif {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            z-index: 0;
+            animation: move 20s infinite;
+        }
+
+        @keyframes move {
+            0% { transform: translateY(0) translateX(0); }
+            100% { transform: translateY(100vh) translateX(calc(100vw - 100px)); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cyberpunk Contract Interaction</h1>
+        <button id="connectButton">Connect MetaMask</button>
+        <br>
+        <input type="number" id="numberInput" placeholder="Enter a number">
+        <button id="setNumberButton">Set Number</button>
+        <br>
+        <button id="getNumberButton">Get Number</button>
+        <p id="result">Current Number: Loading...</p>
+    </div>
+
+    <div class="gif-background" id="gifBackground"></div>
+
+    <script>
+        // Contract details
+        const contractAddress = '0xffE571dD6748F389d388DD6bF45aFb1048121915';
+        const contractAbi = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "input",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "setNum",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "num",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        let provider, signer, contract;
+
+        // Load the current number from the contract when the page loads
+        window.addEventListener('load', async () => {
+            if (window.ethereum) {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                contract = new ethers.Contract(contractAddress, contractAbi, provider);
+
+                try {
+                    const num = await contract.num();
+                    document.getElementById('result').innerText = `Current Number: ${num.toString()}`;
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById('result').innerText = 'Error loading current number.';
+                }
+            } else {
+                document.getElementById('result').innerText = 'MetaMask is not installed.';
+            }
+        });
+
+        document.getElementById('connectButton').addEventListener('click', async () => {
+            try {
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                signer = provider.getSigner();
+                contract = contract.connect(signer);
+                document.getElementById('result').innerText = 'Connected to MetaMask!';
+            } catch (error) {
+                console.error(error);
+                document.getElementById('result').innerText = 'Error connecting to MetaMask.';
+            }
+        });
+
+        document.getElementById('setNumberButton').addEventListener('click', async () => {
+            const number = document.getElementById('numberInput').value;
+            if (!number) {
+                document.getElementById('result').innerText = 'Please enter a number.';
+                return;
+            }
+            try {
+                const tx = await contract.setNum(ethers.BigNumber.from(number));
+                await tx.wait();
+                document.getElementById('result').innerText = 'Number set successfully!';
+            } catch (error) {
+                console.error(error);
+                document.getElementById('result').innerText = 'Error setting number.';
+            }
+        });
+
+        document.getElementById('getNumberButton').addEventListener('click', async () => {
+            try {
+                const num = await contract.num();
+                document.getElementById('result').innerText = `Current Number: ${num.toString()}`;
+            } catch (error) {
+                console.error(error);
+                document.getElementById('result').innerText = 'Error retrieving number.';
+            }
+        });
+
+        // Create anime GIF elements
+        const gifs = [
+            'https://www.icegif.com/wp-content/uploads/2023/06/icegif-309.gif',
+            'https://media.giphy.com/media/l2SpXwM4XIxgA9oWk/giphy.gif',
+            'https://media.giphy.com/media/3ohs4m1T8FWdR6vL5u/giphy.gif',
+            'https://media.giphy.com/media/3ohzdIuqJoo8QdKlnW/giphy.gif',
+            'https://media.giphy.com/media/l3vRaWzNB8j7S/giphy.gif'
+        ];
+
+        const gifBackground = document.getElementById('gifBackground');
+
+        function createGif() {
+            const gifElement = document.createElement('img');
+            gifElement.src = gifs[Math.floor(Math.random() * gifs.length)];
+            gifElement.classList.add('anime-gif');
+            gifElement.style.top = `${Math.random() * 100}vh`;
+            gifElement.style.left = `${Math.random() * 100}vw`;
+            gifElement.style.opacity = Math.random();
+            gifBackground.appendChild(gifElement);
+        }
+
+        for (let i = 0; i < 100; i++) {
+            createGif();
+        }
+    </script>
+</body>
+</html>
